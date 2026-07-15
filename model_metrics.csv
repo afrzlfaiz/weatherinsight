@@ -1,0 +1,39 @@
+kota,kolom_target,n_train,n_test,mae,rmse,mape,mae_baseline_naif,rmse_baseline_naif,lebih_baik_dari_baseline,model_version,model_path,updated_at
+Ambon,temperature_2m,8448,336,0.861,1.084,3.34,0.623,0.834,False,v1,models/prophet_temperature_2m_ambon.json,2026-07-15T11:41:12.145342+00:00
+Banda Aceh,temperature_2m,8448,336,1.354,1.781,4.92,1.249,1.607,False,v1,models/prophet_temperature_2m_banda_aceh.json,2026-07-15T11:41:13.731679+00:00
+Bandar Lampung,temperature_2m,8448,336,0.542,0.749,2.02,0.646,0.872,True,v1,models/prophet_temperature_2m_bandar_lampung.json,2026-07-15T11:41:14.587168+00:00
+Bandung,temperature_2m,8448,336,1.488,1.719,6.29,0.869,1.206,False,v1,models/prophet_temperature_2m_bandung.json,2026-07-15T11:41:16.001325+00:00
+Banjarbaru,temperature_2m,8448,336,0.721,0.976,2.67,0.645,0.902,False,v1,models/prophet_temperature_2m_banjarbaru.json,2026-07-15T11:41:17.012563+00:00
+Bengkulu,temperature_2m,8448,336,0.882,1.211,3.31,0.941,1.241,True,v1,models/prophet_temperature_2m_bengkulu.json,2026-07-15T11:41:18.851598+00:00
+Denpasar,temperature_2m,8448,336,0.863,1.221,3.68,0.545,0.722,False,v1,models/prophet_temperature_2m_denpasar.json,2026-07-15T11:41:20.094852+00:00
+Gorontalo,temperature_2m,8448,336,0.925,1.067,3.14,0.492,0.644,False,v1,models/prophet_temperature_2m_gorontalo.json,2026-07-15T11:41:21.230642+00:00
+Jakarta,temperature_2m,8448,336,0.723,0.916,2.49,0.7,0.989,False,v1,models/prophet_temperature_2m_jakarta.json,2026-07-15T11:41:22.998575+00:00
+Jambi,temperature_2m,8448,336,0.579,0.803,2.11,0.802,1.101,True,v1,models/prophet_temperature_2m_jambi.json,2026-07-15T11:41:24.649447+00:00
+Jayapura,temperature_2m,8448,336,0.674,0.89,2.53,0.69,0.935,True,v1,models/prophet_temperature_2m_jayapura.json,2026-07-15T11:41:25.833572+00:00
+Kendari,temperature_2m,8448,336,0.697,0.852,2.72,0.515,0.693,False,v1,models/prophet_temperature_2m_kendari.json,2026-07-15T11:41:26.964032+00:00
+Kupang,temperature_2m,8448,336,0.639,0.801,2.45,0.406,0.54,False,v1,models/prophet_temperature_2m_kupang.json,2026-07-15T11:41:28.047370+00:00
+Makassar,temperature_2m,8448,336,0.705,0.875,2.48,0.461,0.606,False,v1,models/prophet_temperature_2m_makassar.json,2026-07-15T11:41:29.102152+00:00
+Mamuju,temperature_2m,8448,336,0.645,0.799,2.29,0.526,0.671,False,v1,models/prophet_temperature_2m_mamuju.json,2026-07-15T11:41:30.620656+00:00
+Manado,temperature_2m,8448,336,1.837,2.253,6.07,0.833,1.356,False,v1,models/prophet_temperature_2m_manado.json,2026-07-15T11:41:32.071450+00:00
+Manokwari,temperature_2m,8448,336,0.866,1.096,3.35,0.765,1.064,False,v1,models/prophet_temperature_2m_manokwari.json,2026-07-15T11:41:33.761789+00:00
+Mataram,temperature_2m,8448,336,1.15,1.562,4.87,0.825,1.05,False,v1,models/prophet_temperature_2m_mataram.json,2026-07-15T11:41:35.058165+00:00
+Medan,temperature_2m,8448,336,0.893,1.213,3.22,1.285,1.705,True,v1,models/prophet_temperature_2m_medan.json,2026-07-15T11:41:36.717685+00:00
+Merauke,temperature_2m,8448,336,0.564,0.71,2.19,0.664,0.873,True,v1,models/prophet_temperature_2m_merauke.json,2026-07-15T11:41:38.248766+00:00
+Nabire,temperature_2m,8448,336,0.766,0.999,2.96,0.71,0.974,False,v1,models/prophet_temperature_2m_nabire.json,2026-07-15T11:41:39.672438+00:00
+Padang,temperature_2m,8448,336,0.806,1.061,3.06,0.95,1.325,True,v1,models/prophet_temperature_2m_padang.json,2026-07-15T11:41:40.955164+00:00
+Palangka Raya,temperature_2m,8448,336,0.826,1.03,3.01,0.924,1.356,True,v1,models/prophet_temperature_2m_palangka_raya.json,2026-07-15T11:41:42.494297+00:00
+Palembang,temperature_2m,8448,336,0.947,1.174,3.19,0.67,1.075,False,v1,models/prophet_temperature_2m_palembang.json,2026-07-15T11:41:43.991245+00:00
+Palu,temperature_2m,8448,336,1.015,1.308,3.43,0.841,1.163,False,v1,models/prophet_temperature_2m_palu.json,2026-07-15T11:41:46.146154+00:00
+Pangkal Pinang,temperature_2m,8448,336,0.672,0.907,2.31,0.841,1.209,True,v1,models/prophet_temperature_2m_pangkal_pinang.json,2026-07-15T11:41:47.435206+00:00
+Pekanbaru,temperature_2m,8448,336,0.878,1.275,3.25,0.986,1.425,True,v1,models/prophet_temperature_2m_pekanbaru.json,2026-07-15T11:41:49.329539+00:00
+Pontianak,temperature_2m,8448,336,0.844,1.148,3.05,1.043,1.534,True,v1,models/prophet_temperature_2m_pontianak.json,2026-07-15T11:41:50.817149+00:00
+Samarinda,temperature_2m,8448,336,0.872,1.084,3.15,0.889,1.225,True,v1,models/prophet_temperature_2m_samarinda.json,2026-07-15T11:41:52.063745+00:00
+Semarang,temperature_2m,8448,336,1.147,1.433,4.26,0.591,0.751,False,v1,models/prophet_temperature_2m_semarang.json,2026-07-15T11:41:53.475405+00:00
+Serang,temperature_2m,8448,336,0.79,1.098,2.74,0.85,1.197,True,v1,models/prophet_temperature_2m_serang.json,2026-07-15T11:41:54.734389+00:00
+Sofifi,temperature_2m,8448,336,0.798,0.988,2.84,0.508,0.683,False,v1,models/prophet_temperature_2m_sofifi.json,2026-07-15T11:41:56.840374+00:00
+Sorong,temperature_2m,8448,336,0.64,0.817,2.43,0.764,1.025,True,v1,models/prophet_temperature_2m_sorong.json,2026-07-15T11:41:58.350828+00:00
+Surabaya,temperature_2m,8448,336,0.852,1.209,3.18,0.66,0.903,False,v1,models/prophet_temperature_2m_surabaya.json,2026-07-15T11:42:00.241966+00:00
+Tanjung Pinang,temperature_2m,8448,336,0.646,0.83,2.27,0.899,1.196,True,v1,models/prophet_temperature_2m_tanjung_pinang.json,2026-07-15T11:42:01.538281+00:00
+Tanjung Selor,temperature_2m,8448,336,0.804,1.107,3.04,0.97,1.336,True,v1,models/prophet_temperature_2m_tanjung_selor.json,2026-07-15T11:42:03.239662+00:00
+Wamena,temperature_2m,8448,336,1.061,1.396,6.24,1.108,1.513,True,v1,models/prophet_temperature_2m_wamena.json,2026-07-15T11:42:04.138988+00:00
+Yogyakarta,temperature_2m,8448,336,1.093,1.376,4.46,0.785,1.046,False,v1,models/prophet_temperature_2m_yogyakarta.json,2026-07-15T11:42:05.437430+00:00

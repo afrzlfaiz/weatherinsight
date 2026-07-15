@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Data (generated, large)
+*.csv
+!model_metrics.csv
+
+# Models (generated)
+models/*.json
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Frontend build
+frontend/.next/
+frontend/node_modules/
+frontend/out/
