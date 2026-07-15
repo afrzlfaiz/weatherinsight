@@ -59,7 +59,7 @@ class WeatherOut(BaseModel):
     city_id: int
     city: str | None = None  # diisi manual lewat JOIN
     province: str | None = None
-    datetime: str
+    datetime: datetime  # asyncpg returns datetime object, Pydantic serializes to ISO string
     temperature: float | None
     humidity: float | None
     pressure: float | None
@@ -126,7 +126,7 @@ class ModelMetricOut(BaseModel):
     rmse_baseline_naif: float | None
     lebih_baik_dari_baseline: bool | None
     model_version: str
-    updated_at: str
+    updated_at: datetime
 
 
 # ── Helpers ────────────────────────────────────────────────────────
