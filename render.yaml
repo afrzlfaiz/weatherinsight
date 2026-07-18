@@ -13,3 +13,5 @@ services:
         sync: false # diisi manual via Render dashboard (Supabase connection string)
       - key: CORS_ORIGINS
         value: "https://weatherinsight.vercel.app,http://localhost:3000"
+      - key: CRON_SECRET
+        sync: false # token Bearer untuk POST /api/jobs/hourly dari cron-job.org

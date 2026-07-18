@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import Link from "next/link";
@@ -8,10 +8,8 @@ import { getWeatherInfo, getTempColor } from "@/lib/constants";
 import type { CurrentWeather } from "@/lib/api";
 
 // Fix Leaflet default marker icon issue with Next.js
-function createTempIcon(temp: number, weatherCode: number): L.DivIcon {
+function createTempIcon(temp: number): L.DivIcon {
   const color = getTempColor(temp);
-  const info = getWeatherInfo(weatherCode);
-  
   return L.divIcon({
     className: "custom-marker",
     html: `
@@ -61,21 +59,6 @@ export default function IndonesiaMap({
   weatherData,
   height = "500px",
 }: IndonesiaMapProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) {
-    return (
-      <div
-        className="skeleton w-full rounded-2xl"
-        style={{ height }}
-      />
-    );
-  }
-
   return (
     <div className="glass-card-static overflow-hidden w-full max-w-full" style={{ height }}>
       <MapContainer
@@ -92,7 +75,7 @@ export default function IndonesiaMap({
         attributionControl={false}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
         />
         <MapBounds data={weatherData} />
@@ -103,27 +86,27 @@ export default function IndonesiaMap({
             <Marker
               key={w.slug}
               position={[w.lat, w.lon]}
-              icon={createTempIcon(w.temperature, w.weatherCode)}
+              icon={createTempIcon(w.temperature)}
             >
               <Popup>
                 <div style={{ minWidth: 180 }}>
                   <div style={{ marginBottom: 8 }}>
                     <strong style={{ fontSize: 14, display: "block" }}>{w.city}</strong>
-                    <span style={{ fontSize: 12, color: "#94a3b8" }}>{w.province}</span>
+                    <span style={{ fontSize: 12, color: "#7a899e" }}>{w.province}</span>
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
                     <span style={{ fontSize: 28, fontWeight: 800, color: getTempColor(w.temperature) }}>
                       {Math.round(w.temperature)}°C
                     </span>
                   </div>
-                  <div style={{ fontSize: 12, color: "#94a3b8", marginBottom: 8 }}>
+                  <div style={{ fontSize: 12, color: "#52647a", marginBottom: 8 }}>
                     {info.description} · Kelembapan {w.humidity}%
                   </div>
                   <Link
                     href={`/city/${w.slug}`}
                     style={{
                       fontSize: 12,
-                      color: "#3b82f6",
+                      color: "#2563eb",
                       fontWeight: 600,
                       textDecoration: "none",
                     }}

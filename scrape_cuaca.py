@@ -1,5 +1,5 @@
 """Scraper live hourly — 38 kota Indonesia via Open-Meteo Forecast API.
-Dijalankan oleh GitHub Actions cron setiap jam. Insert langsung ke Supabase PostgreSQL.
+Dijalankan endpoint cron FastAPI setiap jam. Insert langsung ke Supabase PostgreSQL.
 """
 import os
 import sys

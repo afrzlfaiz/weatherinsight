@@ -70,35 +70,21 @@ Kuota gratis: hingga 10.000 request/hari untuk penggunaan non-komersial — jauh
 ## 7. Arsitektur Sistem
 
 ```
-                     ┌─────────────────────┐
-                     │  Open-Meteo API      │
-                     │  (Forecast + Archive)│
-                     └──────────┬──────────┘
-                                │
-        ┌───────────────────────┼───────────────────────┐
-        │                       │                        │
-        ▼                       ▼                        ▼
-  Backfill Script         Scraper Hourly            Training Script
-  (sekali jalan)          (GitHub Actions cron)      (Prophet, per kota)
-        │                       │                        │
-        └───────────┬───────────┘                        │
-                     ▼                                    ▼
-              Supabase PostgreSQL  ◄───────────────  models/*.json
-              (weather, forecast,                    model_metrics
-               cities, model_metrics)
-                     │
-                     ▼
-              FastAPI Backend (Render)
-                     │
-                     ▼
-              Next.js Frontend (Vercel)
-                     │
-                     ▼
-              exit1.dev (uptime monitor,
-              endpoint terpisah dari trigger cron)
+cron-job.org ──POST /api/jobs/hourly──→ FastAPI Backend (Render)
+                                              │
+Open-Meteo API ──→ scraper hourly ────────────┤
+                                              ▼
+                                      Supabase PostgreSQL
+                               (raw 90 hari + agregat harian)
+                                      ▲               │
+                                      │               ▼
+Backfill Script ──────────────────────┘       Next.js Frontend (Vercel)
+                                                      │
+Training Script ──→ models/*.json.gz                  ▼
+                                              exit1.dev health monitor
 ```
 
-**Prinsip desain kunci:** *ingest* (scraping/backfill) dipisah dari *presentation layer* (dashboard/API). Backend Render boleh sleep saat idle karena tidak ada hubungannya dengan proses pengumpulan data — data tetap masuk lewat GitHub Actions/serverless function yang independen dari status hidup-matinya backend.
+**Prinsip desain kunci:** cron-job.org hanya menjadi scheduler eksternal. Satu endpoint internal FastAPI menjalankan scraper lalu agregasi retensi secara berurutan. Endpoint diamankan dengan Bearer token dan timeout scheduler dibuat 300 detik untuk mengakomodasi cold start Render.
 
 ### Stack
 
@@ -108,37 +94,32 @@ Kuota gratis: hingga 10.000 request/hari untuk penggunaan non-komersial — jauh
 | Backend | FastAPI |
 | Database | PostgreSQL (Supabase, free tier) |
 | Machine Learning | Prophet (v1), dibandingkan dengan baseline naif; XGBoost/LightGBM sebagai kandidat v2 |
-| Automation | GitHub Actions scheduled workflow |
+| Automation | cron-job.org → endpoint internal FastAPI |
 | Monitoring | exit1.dev (uptime + health check) |
 | Deployment | Vercel (frontend), Render (backend), Supabase (database) |
 
 ## 8. Skema Database
 
 ```
-cities            weather                forecast              model_metrics
-─────────         ─────────              ─────────             ─────────
-id                id                     id                    city_id
-province          city_id (FK)           city_id (FK)          MAE
-city              datetime               forecast_time         RMSE
-latitude          temperature            temperature           MAPE
-longitude         humidity               humidity              updated_at
-timezone          pressure               rainfall
-                  wind_speed             generated_at
-                  wind_direction         model_version
-                  visibility  *nullable untuk baris backfill*
-                  cloud
-                  rainfall
-                  weather_code
-                  weather_description
+cities            weather                weather_daily_summary    forecast / model_metrics
+─────────         ─────────              ─────────────────────    ────────────────────────
+id                id                     city_id (FK)              city_id (FK)
+province          city_id (FK)           date                     forecast/model fields
+city              datetime               temperature avg/min/max
+latitude          temperature            humidity/pressure avg
+longitude         humidity               wind avg/max
+timezone          pressure               cloud avg
+                  wind/cloud/rainfall     rainfall sum
+                  visibility *nullable*   observation_count
 ```
 
 ## 9. Strategi Retensi & Storage
 
 **Kendala utama:** Supabase free tier dibatasi **500 MB** — jauh lebih kecil dari asumsi awal, dan menjadi driver utama keputusan retensi berikut:
 
-- **Tabel `weather`** (raw, hourly): retensi berbasis *time-window* — `DELETE WHERE datetime < NOW() - INTERVAL 'N bulan/tahun'`, dijalankan sebagai scheduled cleanup harian terpisah dari job scraping. Lebih robust dibanding pendekatan "1 insert = 1 delete" karena idempotent dan tidak butuh pairing ketat.
+- **Tabel `weather`** (raw, hourly): mempertahankan 90 hari terakhir. Endpoint hourly memanggil fungsi agregasi setelah scraping; fungsi memindahkan hari UTC yang sudah melewati batas ke `weather_daily_summary`, lalu menghapus raw sumbernya secara atomik.
 - **Tabel `forecast`**: risiko pertumbuhan **jauh lebih cepat** dari `weather` kalau setiap run menyimpan seluruh horizon forecast (24 jam + 3 hari + 7 hari) untuk 38 kota tiap jam. Retensi di tabel ini harus jauh lebih agresif — hanya simpan forecast aktif/terbaru per kota, bukan akumulasi semua histori generate.
-- **Downsampling (Tahap 5):** data `weather` yang lebih tua dari ~90 hari diringkas ke agregat harian (`weather_daily_summary`) alih-alih dihapus total, supaya fitur tren jangka panjang di halaman Analytics tetap punya data tanpa membebani storage mentah.
+- **Downsampling:** data `weather` yang lebih tua dari 90 hari diringkas ke agregat UTC harian (`weather_daily_summary`), lalu data hourly sumbernya dihapus dalam transaksi yang sama. Satu endpoint hourly menjalankan proses ini secara idempoten setelah scraping selesai.
 - **Catatan teknis:** `DELETE` di Postgres tidak langsung mengecilkan ukuran fisik database (perlu `VACUUM`/autovacuum) — perlu dipantau lewat Supabase dashboard, bukan diasumsikan otomatis instan.
 
 ## 10. Pendekatan Machine Learning / Forecasting
@@ -146,7 +127,7 @@ timezone          pressure               rainfall
 - **Mengatasi cold-start:** alih-alih menunggu data live terkumpul secara real-time selama berbulan-bulan, training awal memakai **backfill historis** dari Open-Meteo Historical API (1–2 tahun data per kota), sehingga model sudah bisa dipakai sejak hari pertama peluncuran.
 - **Model:** Prophet, dilatih terpisah per kota per variabel target (suhu, kelembapan, curah hujan).
 - **Evaluasi:** split kronologis (train/test berbasis waktu, bukan acak) untuk menghindari data leakage. Metrik MAE/RMSE/MAPE **selalu dibandingkan dengan baseline naif** (nilai 24 jam sebelumnya) — model yang tidak mengungguli baseline ini ditandai eksplisit, bukan disembunyikan.
-- **Retraining:** dijadwalkan berkala seiring data live bertambah, memakai gabungan data backfill + data live yang terus terkumpul.
+- **Retraining:** dijalankan berkala sebelum deployment model baru. Training menggabungkan arsip backfill awal dengan agregat harian dan data raw terbaru dari database setelah ujung arsip, sehingga dataset tetap berkembang meski raw memiliki retensi 90 hari.
 - **Versioning:** setiap model disimpan dengan `model_version`, hasil evaluasi tercatat di `model_metrics` per waktu — memungkinkan pelacakan apakah model membaik dari waktu ke waktu.
 - **Batasan yang diakui secara terbuka:** forecasting cuaca yang serius berbasis model fisika atmosfer (NWP), bukan time-series biasa. Framing proyek ini adalah *model pembanding vs sumber resmi* dan *nowcasting jangka pendek*, bukan klaim mengalahkan BMKG/lembaga resmi.
 
@@ -169,7 +150,7 @@ timezone          pressure               rainfall
 | Frontend | Vercel | Serverless, tidak ada konsep "sleep" |
 | Backend | Render | 750 jam instance/bulan **per workspace** (bukan per service — baru berisiko kalau ada service lain berjalan paralel); cold start ~30-60 detik setelah 15 menit idle |
 | Database | Supabase | **500 MB** batas ukuran database — driver utama strategi retensi di Bagian 9 |
-| Scheduling | GitHub Actions | Timing best-effort (delay 5–30 menit lazim, bisa lebih saat traffic tinggi); scheduled workflow **otomatis nonaktif setelah 60 hari tanpa aktivitas commit** di repo publik — perlu commit trivial berkala atau workaround keep-alive workflow |
+| Scheduling | cron-job.org | Memanggil URL publik FastAPI; gunakan POST, Bearer token, timeout 300 detik, dan notifikasi kegagalan |
 | Monitoring | exit1.dev | 10 monitor, interval cek minimum 5 menit di free tier |
 
 **Pemisahan tanggung jawab exit1.dev:** dipakai murni untuk monitoring (endpoint `/api/health` terpisah), bukan sekaligus sebagai pemicu job scraping — supaya kalau exit1.dev sendiri bermasalah, tetap ada jalur alert yang independen dari jalur yang gagal.
@@ -190,11 +171,11 @@ timezone          pressure               rainfall
 |---|---|
 | Tabel `forecast` membengkak jauh lebih cepat dari `weather` | Retensi agresif, hanya simpan forecast aktif |
 | exit1.dev jadi single point of failure (trigger + health signal jadi satu) | Pisah jadi 2 endpoint/monitor: trigger scraping vs health check |
-| GitHub Actions cron di-nonaktifkan otomatis setelah 60 hari tanpa commit | Commit trivial berkala atau workflow keep-alive komunitas |
+| Endpoint cron dapat dipanggil pihak tidak berwenang | Wajib Bearer token `CRON_SECRET`; endpoint tidak ditampilkan di Swagger publik |
 | Cold-start model forecasting (butuh histori berbulan-bulan) | Backfill dari Historical API, bukan menunggu real-time |
 | Train-serve skew (sumber data historis ≠ sumber live) | Kedua sumber memakai Open-Meteo secara konsisten |
 | Kuota Supabase 500 MB gampang habis kalau retensi naif | Time-window delete + downsampling untuk data lama |
-| Data timestamp drift akibat delay eksekusi GitHub Actions | Timestamp diambil dari field `time` respons API, bukan `datetime.now()` lokal |
+| Data timestamp drift akibat delay scheduler | Timestamp diambil dari field `time` respons API, bukan `datetime.now()` lokal |
 
 ## 15. Lampiran: Aset yang Sudah Dibuat
 

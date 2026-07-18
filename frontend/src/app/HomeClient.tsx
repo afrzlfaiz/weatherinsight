@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import {
   Thermometer,
-  Droplets,
   TrendingUp,
   TrendingDown,
   MapPin,
@@ -13,6 +12,7 @@ import {
   CloudRain,
   Sun,
   Zap,
+  Radio,
 } from "lucide-react";
 import WeatherCard from "@/components/weather/WeatherCard";
 import { getWeatherInfo } from "@/lib/constants";
@@ -69,29 +69,41 @@ export default function HomeClient({ initialData }: HomeClientProps) {
 
   return (
     <div className="animate-fade-in">
-      {/* Hero Section */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-2">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "var(--gradient-accent)" }}
-          >
-            <MapPin size={20} className="text-white" />
+      {/* Page header */}
+      <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-5 mb-8">
+        <div>
+          <span className="page-eyebrow">
+            <Radio size={13} /> Pantauan nasional
+          </span>
+          <div className="flex items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200/60"
+              style={{ background: "var(--gradient-accent)" }}
+            >
+              <MapPin size={21} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+                Cuaca Indonesia
+              </h1>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              Cuaca Indonesia
-            </h1>
-            <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-              Monitoring real-time 38 ibu kota provinsi
-            </p>
-          </div>
+          <p className="text-sm mt-3 max-w-xl leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+            Kondisi terkini dan prakiraan cuaca ibu kota provinsi di seluruh Indonesia.
+          </p>
         </div>
-      </div>
+        <div className="inline-flex items-center gap-2 self-start md:self-auto px-3.5 py-2 rounded-full bg-white border shadow-sm" style={{ borderColor: "var(--border-subtle)" }}>
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+          </span>
+          <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>Data diperbarui berkala</span>
+        </div>
+      </header>
 
       {/* Stats Cards */}
       {stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8 stagger-children">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4 mb-8 stagger-children">
           <div className="stat-card">
             <div className="flex items-center gap-2 mb-2">
               <Thermometer size={16} style={{ color: "var(--accent-amber)" }} />
@@ -171,11 +183,12 @@ export default function HomeClient({ initialData }: HomeClientProps) {
       )}
 
       {/* View Toggle & Search */}
-      <div className="flex-wrap-row mb-6">
+      <div className="page-toolbar mb-6">
         <div className="tab-list">
           <button
             onClick={() => setView("map")}
             className={`tab-item ${view === "map" ? "active" : ""}`}
+            aria-pressed={view === "map"}
           >
             <MapPin size={14} className="inline mr-1" />
             Peta
@@ -183,6 +196,7 @@ export default function HomeClient({ initialData }: HomeClientProps) {
           <button
             onClick={() => setView("grid")}
             className={`tab-item ${view === "grid" ? "active" : ""}`}
+            aria-pressed={view === "grid"}
           >
             <Cloud size={14} className="inline mr-1" />
             Grid
@@ -198,15 +212,10 @@ export default function HomeClient({ initialData }: HomeClientProps) {
           <input
             type="text"
             placeholder="Cari kota atau provinsi..."
+            aria-label="Cari kota atau provinsi"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm"
-            style={{
-              background: "var(--bg-card)",
-              border: "1px solid var(--border-medium)",
-              color: "var(--text-primary)",
-              outline: "none",
-            }}
+            className="search-field"
           />
         </div>
 
@@ -216,18 +225,20 @@ export default function HomeClient({ initialData }: HomeClientProps) {
       </div>
 
       {/* Map View */}
-      {view === "map" && (
+      {view === "map" && filteredData.length > 0 && (
         <div className="mb-8">
-          <IndonesiaMap weatherData={initialData} height="500px" />
+          <IndonesiaMap weatherData={filteredData} height="clamp(380px, 52vw, 540px)" />
         </div>
       )}
 
       {/* City Grid */}
-      <div className="grid-cards stagger-children">
-        {filteredData.map((data, i) => (
-          <WeatherCard key={data.slug} data={data} index={i} />
-        ))}
-      </div>
+      {view === "grid" && (
+        <div className="grid-cards stagger-children">
+          {filteredData.map((data, i) => (
+            <WeatherCard key={data.slug} data={data} index={i} />
+          ))}
+        </div>
+      )}
 
       {filteredData.length === 0 && (
         <div className="text-center py-20">

@@ -39,13 +39,13 @@ export default function Sidebar() {
       {/* Mobile toggle */}
       <button
         onClick={() => setOpen(!open)}
-        className="fixed top-4 left-4 z-50 p-2 rounded-xl sm:hidden"
+        className="fixed top-4 right-4 z-50 p-2.5 rounded-xl sm:hidden shadow-lg"
         style={{
-          background: "var(--glass-bg)",
+          background: "#ffffff",
           backdropFilter: "blur(12px)",
           border: "1px solid var(--glass-border)",
         }}
-        aria-label="Toggle menu"
+        aria-label={open ? "Tutup menu" : "Buka menu"}
       >
         {open ? <X size={20} /> : <Menu size={20} />}
       </button>
@@ -66,17 +66,17 @@ export default function Sidebar() {
           style={{ borderBottom: "1px solid var(--border-subtle)" }}
         >
           <div
-            className="flex items-center justify-center w-9 h-9 rounded-xl"
+            className="flex items-center justify-center w-10 h-10 rounded-2xl shadow-md shadow-blue-200/70"
             style={{ background: "var(--gradient-accent)" }}
           >
             <CloudSun size={20} className="text-white" />
           </div>
           <div className="sidebar-logo-text">
-            <h1 className="text-sm font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+            <h1 className="text-sm font-extrabold tracking-tight" style={{ color: "var(--text-primary)" }}>
               WeatherInsight
             </h1>
             <p className="text-[10px] font-medium" style={{ color: "var(--text-muted)" }}>
-              Indonesia · 38 Kota
+              Cuaca Indonesia
             </p>
           </div>
         </div>
@@ -87,7 +87,7 @@ export default function Sidebar() {
             className="px-7 py-2 text-[10px] font-semibold uppercase tracking-widest"
             style={{ color: "var(--text-muted)" }}
           >
-            Menu
+            Navigasi
           </p>
           {NAV_ITEMS.map((item) => {
             const Icon = ICON_MAP[item.icon] || Home;
@@ -111,13 +111,13 @@ export default function Sidebar() {
           style={{ borderTop: "1px solid var(--border-subtle)" }}
         >
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[11px] font-medium sidebar-text" style={{ color: "var(--text-muted)" }}>
-              Open-Meteo API · Live
+              Sistem berjalan normal
             </span>
           </div>
           <p className="mt-1 text-[10px] sidebar-text" style={{ color: "var(--text-muted)" }}>
-            Data updated every 15 min
+            Open-Meteo · data berkala
           </p>
         </div>
       </aside>

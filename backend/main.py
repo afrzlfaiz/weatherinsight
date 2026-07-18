@@ -4,15 +4,24 @@ Serves weather, forecast, history, and analytics from Supabase PostgreSQL.
 ponytail: semua route di satu file. 38 kota, bukan 380.
            Split ke routers/ kalau sudah >500 baris.
 """
+import asyncio
+import gzip
 import os
-from datetime import datetime, timezone
+import secrets
+import subprocess
+import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from database import get_pool, close_pool
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+SCRAPER_PATH = ROOT_DIR / "scrape_cuaca.py"
+SCRAPER_TIMEOUT_SECONDS = 120
 
 # ── App ────────────────────────────────────────────────────────────
 
@@ -95,6 +104,14 @@ class HealthOut(BaseModel):
     last_weather_time: str | None
 
 
+class HourlyJobOut(BaseModel):
+    status: str
+    scrape_status: str
+    summary_rows: int
+    deleted_raw_rows: int
+    cutoff_date: date
+
+
 class AnalyticsSummary(BaseModel):
     avg_temperature: float | None
     hottest_city: dict | None
@@ -129,9 +146,43 @@ class ModelMetricOut(BaseModel):
     updated_at: datetime
 
 
+def _require_cron_secret(authorization: str | None) -> None:
+    expected = os.getenv("CRON_SECRET")
+    if not expected:
+        raise HTTPException(503, "CRON_SECRET belum dikonfigurasi")
+
+    scheme, _, token = (authorization or "").partition(" ")
+    if scheme.lower() != "bearer" or not token or not secrets.compare_digest(token, expected):
+        raise HTTPException(401, "Token cron tidak valid", headers={"WWW-Authenticate": "Bearer"})
+
+
+async def _run_scraper() -> None:
+    if not os.getenv("DATABASE_URL"):
+        raise HTTPException(503, "DATABASE_URL belum dikonfigurasi")
+
+    try:
+        result = await asyncio.to_thread(
+            subprocess.run,
+            [sys.executable, str(SCRAPER_PATH)],
+            cwd=ROOT_DIR,
+            env=os.environ.copy(),
+            capture_output=True,
+            text=True,
+            timeout=SCRAPER_TIMEOUT_SECONDS,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise HTTPException(504, "Scraper melewati timeout 120 detik") from exc
+
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "Scraper gagal").strip()[-1000:]
+        raise HTTPException(502, detail)
+
+
 # ── Helpers ────────────────────────────────────────────────────────
 
 MODEL_DIR = Path(__file__).resolve().parent.parent / "models"
+MODEL_VERSION_FILE = MODEL_DIR / "model_version.txt"
 
 
 async def _get_city_or_404(city_id: int) -> dict:
@@ -144,6 +195,12 @@ async def _get_city_or_404(city_id: int) -> dict:
 
 def _city_slug(city_name: str) -> str:
     return city_name.lower().replace(" ", "_")
+
+
+def _model_version() -> str:
+    if MODEL_VERSION_FILE.exists():
+        return MODEL_VERSION_FILE.read_text(encoding="utf-8").strip()
+    return "unknown"
 
 
 # ── Health ─────────────────────────────────────────────────────────
@@ -257,7 +314,7 @@ async def forecast(
 ):
     city = await _get_city_or_404(city_id)
     slug = _city_slug(city["city"])
-    model_path = MODEL_DIR / f"prophet_{target}_{slug}.json"
+    model_path = MODEL_DIR / f"prophet_{target}_{slug}.json.gz"
 
     if not model_path.exists():
         raise HTTPException(
@@ -271,14 +328,15 @@ async def forecast(
     from prophet import Prophet
     from prophet.serialize import model_from_json
 
-    with open(model_path) as f:
+    with gzip.open(model_path, "rt", encoding="utf-8") as f:
         model: Prophet = model_from_json(f.read())
 
-    future = model.make_future_dataframe(periods=hours, freq="h")
+    # Historical API final punya jeda beberapa hari. Horizon harus dimulai dari
+    # waktu request, bukan sekadar N jam setelah timestamp training terakhir.
+    now = pd.Timestamp.now(tz="UTC").floor("h").tz_localize(None)
+    future = pd.DataFrame({"ds": pd.date_range(start=now, periods=hours, freq="h")})
     forecast_df = model.predict(future)
-    # ambil hanya N jam ke depan (skip data historis yang ikut di future_df)
-    now = pd.Timestamp.now(tz="UTC").floor("h")
-    future_rows = forecast_df[forecast_df["ds"] >= now].head(hours)
+    future_rows = forecast_df.head(hours)
 
     points: list[ForecastPoint] = []
     for _, row in future_rows.iterrows():
@@ -288,7 +346,7 @@ async def forecast(
         hum = round(float(val), 1) if target == "relative_humidity_2m" and val is not None else None
         rain = round(float(val), 1) if target == "precipitation" and val is not None else None
         points.append(ForecastPoint(
-            forecast_time=row["ds"].isoformat(),
+            forecast_time=pd.Timestamp(row["ds"]).tz_localize("UTC").isoformat(),
             temperature=temp,
             humidity=hum,
             rainfall=rain,
@@ -297,7 +355,7 @@ async def forecast(
     return ForecastOut(
         city_id=city_id,
         city=city["city"],
-        model_version="v1",
+        model_version=_model_version(),
         generated_at=datetime.now(timezone.utc).isoformat(),
         hours=len(points),
         forecast=points,
@@ -378,6 +436,25 @@ async def model_metrics(city_id: int | None = Query(None)):
             ORDER BY mm.mae ASC
         """)
     return [dict(r) for r in rows]
+
+
+# ── Internal Cron Job ─────────────────────────────────────────────
+
+
+@app.post("/api/jobs/hourly", response_model=HourlyJobOut, include_in_schema=False)
+async def hourly_job(authorization: str | None = Header(default=None)):
+    _require_cron_secret(authorization)
+    await _run_scraper()
+
+    pool = await get_pool()
+    compacted = await pool.fetchrow("SELECT * FROM compact_weather_history($1)", 90)
+    return HourlyJobOut(
+        status="ok",
+        scrape_status="ok",
+        summary_rows=compacted["summary_rows"],
+        deleted_raw_rows=compacted["deleted_raw_rows"],
+        cutoff_date=compacted["cutoff_date"],
+    )
 
 
 # ── Run ────────────────────────────────────────────────────────────
