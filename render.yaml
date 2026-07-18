@@ -3,11 +3,12 @@
 services:
   - type: web
     name: weatherinsight-api
-    runtime: python
+    runtime: docker
     region: singapore # terdekat ke Indonesia
     plan: free
-    buildCommand: pip install -r backend/requirements.txt
-    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL
         sync: false # diisi manual via Render dashboard (Supabase connection string)

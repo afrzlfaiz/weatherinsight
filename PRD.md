@@ -162,7 +162,7 @@ timezone          pressure               cloud avg
 | **1. Data Engineering** | Scraper hourly, backfill historis, insert ke Supabase, endpoint data historis | ✅ Script scraping & backfill sudah dibuat dan divalidasi |
 | **2. Dashboard** | Cuaca terkini, grafik historis, peta interaktif, pencarian & perbandingan kota | Belum dimulai |
 | **3. Machine Learning** | Training Prophet per kota, evaluasi vs baseline, retraining berkala | ✅ Script training sudah dibuat dan divalidasi end-to-end |
-| **4. Production** | Dockerisasi, CI/CD, dokumentasi API (Swagger), monitoring/logging | Belum dimulai |
+| **4. Production** | Dockerisasi, CI/CD, dokumentasi API (Swagger), monitoring/logging | Backend Docker ✅; CI/CD dan monitoring lanjutan belum |
 | **5. Nice-to-have** | Heatmap, rain map, notifikasi, download data, dark mode | Belum dimulai — sengaja ditunda sampai Tahap 4 selesai |
 
 ## 14. Risiko & Mitigasi (Log Keputusan)

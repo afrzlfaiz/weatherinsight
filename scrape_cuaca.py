@@ -30,7 +30,7 @@ def ambil_semua_cuaca(session):
     )
 
     try:
-        resp = session.get(url, timeout=15)
+        resp = session.get(url, timeout=45)
         resp.raise_for_status()
         return resp.json()
     except requests.exceptions.RequestException as e:

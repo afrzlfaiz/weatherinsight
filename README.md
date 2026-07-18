@@ -22,10 +22,10 @@ Simpan **DATABASE_URL** (Supabase Dashboard → Settings → Database → Connec
 
 1. Buat **Web Service** di [Render](https://dashboard.render.com)
 2. Connect ke GitHub repo ini
-3. Render auto-detect `render.yaml` (atau set manual):
-   - **Runtime:** Python 3.12
-   - **Build Command:** `pip install -r backend/requirements.txt`
-   - **Start Command:** `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. Render membaca `render.yaml` dan membangun backend dari `Dockerfile` secara otomatis.
+   - **Runtime:** Docker
+   - **Dockerfile path:** `./Dockerfile`
+   - **Health check path:** `/api/health`
 4. Set env var: `DATABASE_URL` = connection string dari Supabase
 5. Set env var: `CORS_ORIGINS` = `https://[nama-app].vercel.app`
 

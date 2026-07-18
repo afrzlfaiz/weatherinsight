@@ -21,7 +21,7 @@ from database import get_pool, close_pool
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 SCRAPER_PATH = ROOT_DIR / "scrape_cuaca.py"
-SCRAPER_TIMEOUT_SECONDS = 120
+SCRAPER_TIMEOUT_SECONDS = 210
 
 # ── App ────────────────────────────────────────────────────────────
 
@@ -172,7 +172,7 @@ async def _run_scraper() -> None:
             check=False,
         )
     except subprocess.TimeoutExpired as exc:
-        raise HTTPException(504, "Scraper melewati timeout 120 detik") from exc
+        raise HTTPException(504, f"Scraper melewati timeout {SCRAPER_TIMEOUT_SECONDS} detik") from exc
 
     if result.returncode != 0:
         detail = (result.stderr or result.stdout or "Scraper gagal").strip()[-1000:]
